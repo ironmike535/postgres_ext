@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================
-# Установка pgvector и pgvectorscale для PostgreSQL 16
+# Установка pgvector и pgvectorscale для PostgreSQL ${PGVER}
 # ============================================
 
 PGVER=17
