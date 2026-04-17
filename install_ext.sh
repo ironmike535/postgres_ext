@@ -2,10 +2,6 @@
 set -euo pipefail
 
 # ============================================
-# Установка pgvector и pgvectorscale для PostgreSQL ${PGVER}
-# ============================================
-
-# ============================================
 # Установка pgvector и pgvectorscale для PostgreSQL
 # Использование: ./install.sh <версия>
 # Пример: ./install.sh 14

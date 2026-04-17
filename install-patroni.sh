@@ -2,27 +2,44 @@
 set -euo pipefail
 
 # ============================================
-# Установка pgvector и pgvectorscale для PostgreSQL ${PGVER} patroni
+# Установка pgvector и pgvectorscale для PostgreSQL на Patroni
+# Использование: ./install.sh <версия>
+# Пример: ./install.sh 14
 # ============================================
 
-PGVER=14
+# Проверка аргумента
+if [ $# -eq 0 ]; then
+    echo "❌ Ошибка: укажите версию PostgreSQL"
+    echo "Использование: $0 <версия>"
+    echo "Пример: $0 14"
+    exit 1
+fi
+
+PGVER=$1
 BUILD_DIR="/tmp/pgvectorscale_build/rhel8/pg${PGVER}"
 PATRONI_CONFIG="/etc/patroni/patroni_postgres.yml"
 CLUSTER_NAME="ha_pgsql"  # замени на имя твоего кластера
 
-echo "===> Копирование файлов pgvectorscale"
-if [[ -d "${BUILD_DIR}" ]]; then
-    cp ${BUILD_DIR}/lib/vectorscale-*.so /usr/pgsql-${PGVER}/lib/
-    cd /usr/pgsql-${PGVER}/lib/
-    ln -sf vectorscale-*.so vectorscale.so
-    cp ${BUILD_DIR}/extension/* /usr/pgsql-${PGVER}/share/extension/
-    chown postgres:postgres /usr/pgsql-${PGVER}/lib/vectorscale*
-    chown -R postgres:postgres /usr/pgsql-${PGVER}/share/extension/vectorscale*
-    echo "✅ Файлы pgvectorscale скопированы"
-else
-    echo "❌ Директория ${BUILD_DIR} не найдена"
+echo "===> Установка для PostgreSQL версии ${PGVER}"
+
+# Проверка существования директории с собранными файлами
+if [[ ! -d "${BUILD_DIR}" ]]; then
+    echo "❌ Ошибка: директория ${BUILD_DIR} не найдена"
+    echo "Сначала соберите pgvectorscale для версии ${PGVER}"
     exit 1
 fi
+
+echo "===> Установка pgvector (из репозитория)"
+dnf install -y pgvector_${PGVER}
+
+echo "===> Копирование файлов pgvectorscale"
+cp ${BUILD_DIR}/lib/vectorscale-*.so /usr/pgsql-${PGVER}/lib/
+cd /usr/pgsql-${PGVER}/lib/
+ln -sf vectorscale-*.so vectorscale.so
+cp ${BUILD_DIR}/extension/* /usr/pgsql-${PGVER}/share/extension/
+chown postgres:postgres /usr/pgsql-${PGVER}/lib/vectorscale*
+chown -R postgres:postgres /usr/pgsql-${PGVER}/share/extension/vectorscale*
+echo "✅ Файлы pgvectorscale скопированы"
 
 echo "===> Добавление vectorscale в shared_preload_libraries (Patroni)"
 if grep -q "shared_preload_libraries" "${PATRONI_CONFIG}"; then
@@ -87,9 +104,10 @@ sudo -u postgres psql -h /tmp -d postgres -c "\dx"
 
 echo ""
 echo "============================================"
-echo "✅ Установка завершена"
+echo "✅ Установка для PostgreSQL ${PGVER} на Patroni завершена"
 echo "============================================"
 echo "Проверка:"
 echo "  sudo -u postgres psql -h /tmp -c \"SELECT extname, extversion FROM pg_extension WHERE extname IN ('vector', 'vectorscale');\""
 echo "  sudo -u postgres psql -h /tmp -c \"SHOW shared_preload_libraries;\""
+echo "  patronictl list"
 echo "============================================"
