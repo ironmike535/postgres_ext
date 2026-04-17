@@ -5,7 +5,7 @@ set -euo pipefail
 # Установка pgvector и pgvectorscale для PostgreSQL ${PGVER} patroni
 # ============================================
 
-PGVER=16
+PGVER=14
 BUILD_DIR="/tmp/pgvectorscale_build/rhel8/pg${PGVER}"
 PATRONI_CONFIG="/etc/patroni/patroni_postgres.yml"
 CLUSTER_NAME="ha_pgsql"  # замени на имя твоего кластера

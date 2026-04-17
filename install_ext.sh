@@ -5,7 +5,21 @@ set -euo pipefail
 # Установка pgvector и pgvectorscale для PostgreSQL ${PGVER}
 # ============================================
 
-PGVER=17
+# ============================================
+# Установка pgvector и pgvectorscale для PostgreSQL
+# Использование: ./install.sh <версия>
+# Пример: ./install.sh 14
+# ============================================
+
+# Проверка аргумента
+if [ $# -eq 0 ]; then
+    echo "❌ Ошибка: укажите версию PostgreSQL"
+    echo "Использование: $0 <версия>"
+    echo "Пример: $0 14"
+    exit 1
+fi
+
+PGVER=$1
 BUILD_DIR="/tmp/pgvectorscale_build/rhel8/pg${PGVER}"
 SOCKET_DIR="/tmp"
 
