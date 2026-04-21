@@ -71,7 +71,7 @@ echo "✅ Конфигурация применена"
 # 6. Перезагрузка Patroni
 echo ""
 echo "===> 6. Перезагрузка Patroni (reload)"
-patronictl reload $CLUSTER_NAME
+patronictl reload $CLUSTER_NAME --force
 echo "✅ Patroni перезагружен"
 
 echo "===> Ожидание 11 секунд"
