@@ -5,7 +5,7 @@ set -euo pipefail
 # Полное удаление векторных расширений
 # ============================================
 
-PGVER=14
+PGVER=15
 SOCKET_DIR="/tmp"
 PG_CONF="/var/lib/pgsql/${PGVER}/data/postgresql.conf"
 

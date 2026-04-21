@@ -6,7 +6,7 @@ set -euo pipefail
 # Порядок: pgvector -> pgvectorscale -> vchord
 # ============================================
 
-PGVER=14
+PGVER=15
 SOCKET_DIR="/tmp"
 PG_CONF="/var/lib/pgsql/${PGVER}/data/postgresql.conf"
 
@@ -23,13 +23,13 @@ echo "✅ pgvector установлен"
 # 2. Установка pgvectorscale
 echo ""
 echo "===> 2. Установка pgvectorscale"
-dnf install -y https://github.com/ironmike535/postgres_ext/raw/refs/heads/main/pgvectorscale/rpms/el8/pg14/pgvectorscale_14-0.9.0-1.el8.x86_64.rpm
+dnf install -y https://github.com/ironmike535/postgres_ext/raw/refs/heads/main/pgvectorscale/rpms/el8/pg${PGVER}/pgvectorscale_${PGVER}-0.9.0-1.el8.x86_64.rpm
 echo "✅ pgvectorscale установлен"
 
 # 3. Установка vchord
 echo ""
 echo "===> 3. Установка vchord"
-dnf install -y https://github.com/ironmike535/postgres_ext/raw/refs/heads/main/vchord/rpms/el8/pg14/vchord_14-1.1.1-1.el8.x86_64.rpm
+dnf install -y https://github.com/ironmike535/postgres_ext/raw/refs/heads/main/vchord/rpms/el8/pg${PGVER}/vchord_${PGVER}-1.1.1-1.el8.x86_64.rpm
 echo "✅ vchord установлен"
 
 # 4. Добавление расширений в shared_preload_libraries
