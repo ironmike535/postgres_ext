@@ -2,13 +2,14 @@
 set -euo pipefail
 
 # ============================================
-# Сборка pgvectorscale RPM для PostgreSQL 14-17 на Rocky Linux 8
-# Без зависимости от pgvector и с правильным именем библиотеки
+# Сборка pgvectorscale RPM для PostgreSQL 14-17 на Rocky Linux 8/9
 # ============================================
 
+# Выберите версию Rocky Linux: 8 или 9
 RHEL_VERSION=9
+
 ARCH="amd64"
-OUTPUT_DIR="/tmp/pgvectorscale_build"
+OUTPUT_DIR="/tmp/pgvectorscale_build_rhel${RHEL_VERSION}"
 RPM_OUTPUT_DIR="${OUTPUT_DIR}/rpms"
 
 # Версии PostgreSQL для сборки
@@ -32,31 +33,33 @@ fi
 
 echo "===> Runtime: $RUNTIME"
 echo "===> Output: $OUTPUT_DIR"
+echo "===> Rocky Linux version: ${RHEL_VERSION}"
 
 for PGVER in "${PG_VERSIONS[@]}"; do
   echo ""
   echo "============================================"
-  echo "BUILDING FOR PostgreSQL ${PGVER}"
+  echo "BUILDING FOR RHEL${RHEL_VERSION} / PostgreSQL ${PGVER}"
   echo "============================================"
 
   "$RUNTIME" run --rm \
     --platform "linux/${ARCH}" \
     -e PG_MAJOR="$PGVER" \
+    -e RHEL_VERSION="$RHEL_VERSION" \
     -e OUTPUT_DIR=/out \
     -e RPM_OUTPUT_DIR=/out/rpms \
     -v "$OUTPUT_DIR:/out${MOUNT_SUFFIX}" \
-    rockylinux:8 \
+    "rockylinux:${RHEL_VERSION}" \
     bash -c '
       set -euo pipefail
 
       PKG_MGR="dnf"
-      rhel_version="8"
+      rhel_version=$RHEL_VERSION
       PG_MAJOR=$PG_MAJOR
       pg_config="/usr/pgsql-${PG_MAJOR}/bin/pg_config"
       export PATH="/usr/pgsql-${PG_MAJOR}/bin:${PATH}"
 
       echo "===> Installing build deps"
-      ${PKG_MGR} install -y \
+      ${PKG_MGR} install -y --allowerasing \
         ca-certificates \
         clang \
         dnf-plugins-core \
@@ -76,12 +79,16 @@ for PGVER in "${PG_VERSIONS[@]}"; do
         rpm-build \
         rpmdevtools
 
+      echo "===> Enabling PowerTools/CRB"
+      if [[ "${rhel_version}" == "8" ]]; then
+        ${PKG_MGR} config-manager --set-enabled powertools || true
+      elif [[ "${rhel_version}" == "9" ]]; then
+        ${PKG_MGR} config-manager --set-enabled crb || true
+      fi
+
       echo "===> Installing PGDG repo"
       ${PKG_MGR} install -y \
         "https://download.postgresql.org/pub/repos/yum/reporpms/EL-${rhel_version}-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
-
-      echo "===> Enabling PowerTools"
-      ${PKG_MGR} config-manager --set-enabled powertools || true
 
       echo "===> Disabling distro PostgreSQL module"
       ${PKG_MGR} -qy module disable postgresql || true
@@ -136,7 +143,7 @@ for PGVER in "${PG_VERSIONS[@]}"; do
       cat > /root/rpmbuild/SPECS/pgvectorscale.spec << EOF
 Name:           pgvectorscale_${PG_MAJOR}
 Version:        0.9.0
-Release:        1.el8
+Release:        1.el${rhel_version}
 Summary:        pgvectorscale vector search for PostgreSQL ${PG_MAJOR}
 License:        Apache-2.0
 BuildArch:      x86_64
@@ -148,8 +155,8 @@ pgvectorscale enhances PostgreSQL with StreamingDiskANN index
 %install
 mkdir -p %{buildroot}/usr/pgsql-${PG_MAJOR}/lib
 mkdir -p %{buildroot}/usr/pgsql-${PG_MAJOR}/share/extension
-cp -r /out/rhel8/pg${PG_MAJOR}/lib/* %{buildroot}/usr/pgsql-${PG_MAJOR}/lib/
-cp -r /out/rhel8/pg${PG_MAJOR}/extension/* %{buildroot}/usr/pgsql-${PG_MAJOR}/share/extension/
+cp -r /out/rhel${rhel_version}/pg${PG_MAJOR}/lib/* %{buildroot}/usr/pgsql-${PG_MAJOR}/lib/
+cp -r /out/rhel${rhel_version}/pg${PG_MAJOR}/extension/* %{buildroot}/usr/pgsql-${PG_MAJOR}/share/extension/
 
 %files
 /usr/pgsql-${PG_MAJOR}/lib/vectorscale*
@@ -158,16 +165,16 @@ EOF
 
       rpmbuild -bb /root/rpmbuild/SPECS/pgvectorscale.spec
 
-      mkdir -p "${RPM_OUTPUT_DIR}/el8/pg${PG_MAJOR}"
-      cp /root/rpmbuild/RPMS/x86_64/pgvectorscale_${PG_MAJOR}-0.9.0-1.el8.x86_64.rpm \
-         "${RPM_OUTPUT_DIR}/el8/pg${PG_MAJOR}/" 2>/dev/null || true
+      mkdir -p "${RPM_OUTPUT_DIR}/el${rhel_version}/pg${PG_MAJOR}"
+      cp /root/rpmbuild/RPMS/x86_64/pgvectorscale_${PG_MAJOR}-0.9.0-1.el${rhel_version}.x86_64.rpm \
+         "${RPM_OUTPUT_DIR}/el${rhel_version}/pg${PG_MAJOR}/" 2>/dev/null || true
 
-      echo "===> DONE: RPM built for PostgreSQL ${PG_MAJOR}"
+      echo "===> DONE: RPM built for RHEL${rhel_version} PostgreSQL ${PG_MAJOR}"
     '
 done
 
 echo ""
 echo "============================================"
 echo "ALL BUILDS COMPLETED"
-echo "RPM OUTPUT: ${RPM_OUTPUT_DIR}/el8/pg{14,15,16,17}/"
+echo "RPM OUTPUT: ${RPM_OUTPUT_DIR}/el${RHEL_VERSION}/pg{14,15,16,17}/"
 echo "============================================"
