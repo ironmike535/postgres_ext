@@ -4,14 +4,24 @@ set -euo pipefail
 # ============================================
 # Установка векторных расширений
 # Порядок: pgvector -> pgvectorscale -> vchord
+# Использование: ./install-all-ext.sh <версия>
+# Пример: ./install-all-ext.sh 14
 # ============================================
 
-PGVER=15
+# Проверка аргумента
+if [ $# -eq 0 ]; then
+    echo "❌ Ошибка: укажите версию PostgreSQL"
+    echo "Использование: $0 <версия>"
+    echo "Пример: $0 14"
+    exit 1
+fi
+
+PGVER=$1
 SOCKET_DIR="/tmp"
 PG_CONF="/var/lib/pgsql/${PGVER}/data/postgresql.conf"
 
 echo "============================================"
-echo "Установка векторных расширений"
+echo "Установка векторных расширений для PostgreSQL ${PGVER}"
 echo "============================================"
 
 # 1. Установка pgvector
@@ -81,5 +91,5 @@ sudo -u postgres psql -h ${SOCKET_DIR} -d postgres -c "SELECT extname, extversio
 
 echo ""
 echo "============================================"
-echo "✅ Установка завершена"
+echo "✅ Установка завершена для PostgreSQL ${PGVER}"
 echo "============================================"
