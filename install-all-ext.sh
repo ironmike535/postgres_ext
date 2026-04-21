@@ -65,8 +65,8 @@ echo ""
 echo "===> 6. Создание расширений в базе данных"
 sudo -u postgres psql -h ${SOCKET_DIR} -d postgres << EOF
 CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS vectorscale CASCADE;
-CREATE EXTENSION IF NOT EXISTS vchord CASCADE;
+CREATE EXTENSION IF NOT EXISTS vectorscale;
+CREATE EXTENSION IF NOT EXISTS vchord;
 EOF
 echo "✅ Расширения созданы"
 
